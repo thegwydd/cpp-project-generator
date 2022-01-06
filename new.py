@@ -42,8 +42,6 @@ if __name__ == "__main__":
     with open(projectPath + "/config.json") as f:
         data = f.read()
     os.remove(projectPath + "/config.json")
-    os.remove(projectPath + "/CMakeLists.txt")
-    os.remove(projectPath + "/README.md")
     os.mkdir(projectPath + "/scripts/")
 
     config = json.loads(data)
@@ -58,21 +56,34 @@ if __name__ == "__main__":
             for dep in deps:
                 outfile.write("add_subdirectory(" + dep + ")\n")
 
+    ignore_extensions = []
+    for ext in config["ignore_extensions"]:
+        if not ext.startswith("."):
+            ext = "." + ext
+        ext = ext.lower()
+        print("ignoring : *." + ext + " files")
+        ignore_extensions.append(ext)
+
     def copy_generator_file(name, loc, dest = ""):
-        shutil.copyfile("templates/" + loc + name, projectPath + dest + name + "temp")
+        shutil.copyfile("templates/" + loc + name, projectPath + dest + name)
 
     def replace_project_name(startpath):
         for root, dirs, files in os.walk(startpath):
             for f in files:
                 file_path = os.path.join(root, f)
-                print("replacing <PNAME> in : " + file_path)
-                with open(file_path, "rt") as inf:
-                    data = inf.read()
-                    data = data.replace("<PNAME>", projectName)
-                    data = data.replace("<#PNAME#>", projectName.upper())
+                
+                filename, file_extension = os.path.splitext(file_path)
+                file_extension = file_extension.lower()
 
-                with open(file_path, "wt") as outf:
-                    outf.write(data)
+                if not file_extension in ignore_extensions:
+                    print("replacing <PNAME> in : " + file_path)
+                    with open(file_path, "rt") as inf:
+                        data = inf.read()
+                        data = data.replace("<PNAME>", projectName)
+                        data = data.replace("<#PNAME#>", projectName.upper())
+
+                    with open(file_path, "wt") as outf:
+                        outf.write(data)
                 
     replace_project_name(projectPath)            
     
